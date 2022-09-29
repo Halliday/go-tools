@@ -3,6 +3,7 @@ package tools
 import (
 	"encoding/json"
 	"log"
+	"math"
 	"net/http"
 
 	"github.com/halliday/go-errors"
@@ -17,17 +18,27 @@ var ErrInternal = &errors.RichError{
 func ServeError(resp http.ResponseWriter, err error) (unsafe error) {
 	safe, unsafe := errors.Safe(err)
 	resp.Header().Set("X-Content-Type-Options", "nosniff")
+	resp.Header().Set("Content-Type", "application/json")
 	if safe != nil {
-		resp.WriteHeader(safe.Code)
+		resp.WriteHeader(range1000(safe.(*errors.RichError).Code))
 		ServeJSON(resp, safe)
 	} else {
-		resp.WriteHeader(500)
+		resp.WriteHeader(ErrInternal.Code)
 		ServeJSON(resp, ErrInternal)
 	}
 	if unsafe != nil {
-		log.Printf("[     ] %v", unsafe)
+		log.Printf("[     ] Unsafe: %v", unsafe)
 	}
 	return unsafe
+}
+
+func range1000(code int) int {
+	for i := 1000; i < math.MaxInt/10; i *= 10 {
+		if code < i {
+			return code / (i / 1000)
+		}
+	}
+	return code // unreachable
 }
 
 func ServeJSON(resp http.ResponseWriter, data interface{}) {
