@@ -1,77 +1,55 @@
-package tools
+package httptools
 
 import (
+	"bytes"
 	"encoding/json"
 	"log"
-	"math"
 	"net/http"
+	"strconv"
 
 	"github.com/halliday/go-errors"
 )
 
-var ErrInternal = &errors.RichError{
-	Name: "internal_server_error",
-	Code: 500,
-	Desc: "An internal server error has occurred.",
-}
+var ErrInternal = &errors.RichError{Name: "internal", Code: 500, Desc: "An internal server error has occurred."}
+var Logger = log.Default()
 
-func ServeError(resp http.ResponseWriter, err error) (unsafe error) {
+func ServeError(resp http.ResponseWriter, req *http.Request, err error) (unsafe error) {
 	safe, unsafe := errors.Safe(err)
 	resp.Header().Set("X-Content-Type-Options", "nosniff")
 	resp.Header().Set("Content-Type", "application/json")
 	if safe != nil {
 		resp.WriteHeader(range1000(safe.(*errors.RichError).Code))
-		ServeJSON(resp, safe)
+		ServeJSON(resp, req, safe)
 	} else {
 		resp.WriteHeader(ErrInternal.Code)
-		ServeJSON(resp, ErrInternal)
+		ServeJSON(resp, req, ErrInternal)
 	}
 	if unsafe != nil {
-		log.Printf("[     ] Unsafe: %v", unsafe)
+		Logger.Printf("Unsafe E: %v", unsafe)
 	}
 	return unsafe
 }
 
 func range1000(code int) int {
-	for i := 1000; i < math.MaxInt/10; i *= 10 {
-		if code < i {
-			return code / (i / 1000)
-		}
+	if code < 1000 {
+		return code
 	}
-	return code // unreachable
+	for code > 1000 {
+		code /= 10
+	}
+	return code
 }
 
-func ServeJSON(resp http.ResponseWriter, data interface{}) {
-	resp.Header().Add("Content-Type", "application/json")
-	encoder := json.NewEncoder(resp)
+func ServeJSON(resp http.ResponseWriter, req *http.Request, data interface{}) {
+	var b bytes.Buffer
+	encoder := json.NewEncoder(&b)
 	encoder.SetEscapeHTML(false)
 	err := encoder.Encode(data)
 	if err != nil {
-		log.Printf("tools.ServeJSON: can not marshal response: %v\n%v", err, data)
+		ServeError(resp, req, err)
+		return
 	}
-}
-
-func UnsafeDisableCORS(resp http.ResponseWriter, req *http.Request) {
-	requestMethod := req.Header.Get("Access-Control-Request-Method")
-	if requestMethod != "" {
-		resp.Header().Set("Access-Control-Allow-Methods", requestMethod)
-	}
-	requestHeaders := req.Header.Get("Access-Control-Request-Headers")
-	if requestHeaders != "" {
-		resp.Header().Set("Access-Control-Allow-Headers", requestHeaders)
-	}
-
-	resp.Header().Set("Access-Control-Allow-Origin", "*")
-}
-
-type Middleware struct {
-	UnsafeDisableCORS bool
-	http.Handler
-}
-
-func (m Middleware) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
-	if m.UnsafeDisableCORS {
-		UnsafeDisableCORS(resp, req)
-	}
-	m.Handler.ServeHTTP(resp, req)
+	resp.Header().Add("Content-Type", "application/json")
+	resp.Header().Add("Content-Length", strconv.Itoa(b.Len()))
+	resp.Write(b.Bytes())
 }
