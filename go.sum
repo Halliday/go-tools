@@ -2,3 +2,5 @@ github.com/halliday/go-errors v0.0.0-20220713083132-31a287bba49c h1:a+1qWRKc/BKd
 github.com/halliday/go-errors v0.0.0-20220713083132-31a287bba49c/go.mod h1:Y4T0LILKpT2p/mWVIFvbLR06QEiv3KA2yfVtOMyTCNc=
 github.com/halliday/go-errors v0.0.0-20220929094431-9c025f4ebe45 h1:Hm68rut74PSBLAiGJdhh0usOMSU70r+BN8aE2yyh9gM=
 github.com/halliday/go-errors v0.0.0-20220929094431-9c025f4ebe45/go.mod h1:Y4T0LILKpT2p/mWVIFvbLR06QEiv3KA2yfVtOMyTCNc=
+github.com/halliday/go-errors v0.0.0-20221117114904-701c88d594be h1:Vn15TOIXFsGo5gnAOfEQnvcT6JlBNntSoim0HVgBRsM=
+github.com/halliday/go-errors v0.0.0-20221117114904-701c88d594be/go.mod h1:Y4T0LILKpT2p/mWVIFvbLR06QEiv3KA2yfVtOMyTCNc=
